@@ -26,7 +26,7 @@ import { SocketModule } from './socket/socket.module';
 					message:
 						error?.extensions?.exception?.response?.message || error?.extensions?.response?.message || error?.message,
 				};
-				console.dir(error.message, { depth: null });
+				console.dir(error, { depth: null });
 				console.log('GRAPHQL GLOBAL ERROR:', garphQLFormattedError);
 				return garphQLFormattedError;
 			},
