@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver } from '@nestjs/apollo';
 import { AppResolver } from './app.resolver';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ComponentsModule } from './components/components.module';
 import { DatabaseModule } from './database/database.module';
 import { T } from './libs/types/common';
@@ -31,6 +32,7 @@ import { SocketModule } from './socket/socket.module';
 				return garphQLFormattedError;
 			},
 		}),
+		EventEmitterModule.forRoot(),
 		ComponentsModule,
 		DatabaseModule,
 		SocketModule,

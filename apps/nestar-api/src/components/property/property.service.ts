@@ -21,6 +21,9 @@ import * as moment from 'moment';
 import { LikeService } from '../like/like.service';
 import { LikeGroup } from '../../libs/enums/like.enum';
 import { LikeInput } from '../../libs/dto/like/like.input';
+import { NotificationInput } from '../../libs/dto/notification/notification.input';
+import { NotificationGroup, NotificationType } from '../../libs/enums/notification.enum';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class PropertyService {
@@ -29,6 +32,7 @@ export class PropertyService {
 		private memberService: MemberService,
 		private viewService: ViewService,
 		private likeService: LikeService,
+		private notificationService: NotificationService,
 	) {}
 
 	public async createProperty(input: PropertyInput): Promise<Property> {
@@ -202,26 +206,34 @@ export class PropertyService {
 
 		return result[0];
 	}
-
 	public async likeTargetProperty(memberId: ObjectId, likeRefId: ObjectId): Promise<Property> {
 		const target: Property = await this.propertyModel
 			.findOne({ _id: likeRefId, propertyStatus: PropertyStatus.ACTIVE })
 			.exec();
 		if (!target) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-
 		const input: LikeInput = {
 			memberId: memberId,
 			likeRefId: likeRefId,
 			likeGroup: LikeGroup.PROPERTY,
 		};
-
 		const modifier: number = await this.likeService.toggleLike(input);
 		const result = await this.propertyStatsEditor({
 			_id: likeRefId,
 			targetKey: 'propertyLikes',
 			modifier: modifier,
 		});
-
+		if (modifier === 1) {
+			const notifInput: NotificationInput = {
+				notificationGroup: NotificationGroup.PROPERTY,
+				notificationType: NotificationType.LIKE,
+				notificationTitle: 'Property Liked!',
+				notificationDesc: 'Someone liked your property!',
+				authorId: memberId,
+				receiverId: target.memberId,
+				propertyId: likeRefId,
+			};
+			await this.notificationService.createNotification(notifInput);
+		}
 		if (!result) throw new InternalServerErrorException(Message.SOMETHING_WENT_WRONG);
 		return result;
 	}

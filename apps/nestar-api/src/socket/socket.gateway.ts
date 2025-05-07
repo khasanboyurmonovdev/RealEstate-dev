@@ -5,6 +5,9 @@ import * as WebSocket from 'ws';
 import { AuthService } from '../components/auth/auth.service';
 import { Member } from '../libs/dto/member/member';
 import * as url from 'url';
+import { OnEvent } from '@nestjs/event-emitter';
+import { NotificationService } from '../components/notification/notification.service';
+import { Notifications } from '../libs/dto/notification/notification';
 
 interface MessagePayload {
 	event: string;
@@ -19,20 +22,23 @@ interface InfoPayload {
 	action: string;
 }
 
-@WebSocketGateway({ tarnsports: ['websocket'], secure: true })
+@WebSocketGateway({ transports: ['websocket'], secure: false })
 export class SocketGateway implements OnGatewayInit {
 	private logger: Logger = new Logger('SocketEventsGateway');
 	private summaryClient: number = 0;
 	private clientsAuthMap = new Map<WebSocket, Member>();
-	private messageHistory: MessagePayload[] = [];
+	private messagesList: MessagePayload[] = [];
 
-	constructor(private authService: AuthService) {}
+	constructor(
+		private authService: AuthService,
+		private notificationService: NotificationService,
+	) {}
 
 	@WebSocketServer()
 	server: Server;
 
-	public afterInit(server: Server) {
-		this.logger.verbose(`WebSocket Server Initialized & total [${this.summaryClient}]`);
+	public afterInit(_server: Server) {
+		this.logger.verbose(`WebSocket Server Initialized. Total:[${this.summaryClient}]`);
 	}
 
 	private async retrieveAuth(req: any): Promise<Member> {
@@ -40,43 +46,56 @@ export class SocketGateway implements OnGatewayInit {
 			const parseUrl = url.parse(req.url, true);
 			const { token } = parseUrl.query;
 			return await this.authService.verifyToken(token as string);
-		} catch (err) {
+		} catch (err: any) {
 			return null;
 		}
 	}
 
 	public async handleConnection(client: WebSocket, req: any) {
-		const authMember = await this.retrieveAuth(req);
 		this.summaryClient++;
+		const authMember = await this.retrieveAuth(req);
 		this.clientsAuthMap.set(client, authMember);
-
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
-		this.logger.verbose(`Connection [${clientNick}] & total [${this.summaryClient}]`);
-
+		this.logger.verbose(`Connnection [${clientNick}] & Total:[${this.summaryClient}]`);
+		let notifications: Notifications | any = [];
+		if (authMember?._id) {
+			notifications = await this.notificationService.getNotifications(authMember?._id);
+			client.send(JSON.stringify({ event: 'notifications', notifications }));
+		}
 		const infoMsg: InfoPayload = {
 			event: 'info',
 			totalClients: this.summaryClient,
 			memberData: authMember,
-			action: 'connected',
+			action: 'joined',
 		};
 		this.emitMessage(infoMsg);
-		// CLIENT MESSAGE HISTORY
-		client.send(JSON.stringify({ event: 'history', list: this.messageHistory }));
+		client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
 	}
 
-	public async handleDisconnect(client: WebSocket) {
-		const authMember = this.clientsAuthMap.get(client);
+	@OnEvent('notification', { async: true })
+	public pushNotification(receiverId: any) {
+		console.log('pushNotification');
+		this.clientsAuthMap.forEach((member: Member, client: WebSocket) => {
+			if (String(receiverId) === String(member?._id)) {
+				this.notificationService.getNotifications(receiverId).then((data) => {
+					client.send(JSON.stringify({ event: 'notifications', notifications: data }));
+					console.log('Notifications event has been emitted!');
+				});
+			}
+		});
+	}
+
+	public handleDisconnect(client: WebSocket) {
 		this.summaryClient--;
-		this.clientsAuthMap.delete(client);
-
+		const authMember = this.clientsAuthMap.get(client);
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
-		this.logger.verbose(`Disconnection [${clientNick}] & total [${this.summaryClient}]`);
-
+		this.clientsAuthMap.delete(client);
+		this.logger.verbose(`Disconnection [${clientNick}] & Total:[${this.summaryClient}]`);
 		const infoMsg: InfoPayload = {
 			event: 'info',
 			totalClients: this.summaryClient,
 			memberData: authMember,
-			action: 'disconnected',
+			action: 'left',
 		};
 		this.broadcastMessage(client, infoMsg);
 	}
@@ -84,13 +103,15 @@ export class SocketGateway implements OnGatewayInit {
 	@SubscribeMessage('message')
 	public async handleMessage(client: WebSocket, payload: any): Promise<void> {
 		const authMember = this.clientsAuthMap.get(client);
-		const newMessage: MessagePayload = { event: 'message', text: payload, memberData: authMember };
-
 		const clientNick: string = authMember?.memberNick ?? 'Guest';
-		this.logger.verbose(`New Message [${clientNick}] ${payload}`);
-
-		this.messageHistory.push(newMessage);
-		if (this.messageHistory.length > 5) this.messageHistory.splice(0, this.messageHistory.length - 5);
+		const newMessage: MessagePayload = {
+			event: 'message',
+			text: payload,
+			memberData: authMember,
+		};
+		this.logger.verbose(`NEW MESSAGE [${clientNick}]: ${payload}`);
+		this.messagesList.push(newMessage);
+		if (this.messagesList.length > 5) this.messagesList.splice(0, this.messagesList.length - 5);
 		this.emitMessage(newMessage);
 	}
 
@@ -110,9 +131,3 @@ export class SocketGateway implements OnGatewayInit {
 		});
 	}
 }
-/*
-MESSAGE TARGET:
- 1. Client (only client)
- 2. Broadcast (except client)
- 3. Emit (all clients)
-*/

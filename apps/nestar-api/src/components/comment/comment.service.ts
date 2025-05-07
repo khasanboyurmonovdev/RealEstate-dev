@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId } from 'mongoose';
 import { Comment, Comments } from '../../libs/dto/comment/comment';
@@ -9,8 +9,12 @@ import { CommentInput, CommentsInquiry } from '../../libs/dto/comment/comment.in
 import { Direction, Message } from '../../libs/enums/common.enum';
 import { CommentGroup, CommentStatus } from '../../libs/enums/comment.enum';
 import { CommentUpdate } from '../../libs/dto/comment/comment.update';
-import { lookupMember } from '../../libs/config';
+import { lookupMember, shapeIntoMongoObjectId } from '../../libs/config';
 import { T } from '../../libs/types/common';
+
+import { NotificationService } from '../notification/notification.service';
+import { NotificationGroup, NotificationType } from '../../libs/enums/notification.enum';
+import { NotificationInput } from '../../libs/dto/notification/notification.input';
 
 @Injectable()
 export class CommentService {
@@ -19,43 +23,70 @@ export class CommentService {
 		private readonly memberService: MemberService,
 		private readonly propertyService: PropertyService,
 		private readonly boardArticleService: BoardArticleService,
+		private notificationService: NotificationService,
 	) {}
 
 	public async createComment(memberId: ObjectId, input: CommentInput): Promise<Comment> {
 		input.memberId = memberId;
-
+		input.commentRefId = shapeIntoMongoObjectId(input.commentRefId);
 		let result = null;
 		try {
 			result = await this.commentModel.create(input);
 		} catch (err) {
-			console.log('Error, Service.Model:', err.message);
-			throw new BadRequestException(Message.CREATE_FAILED);
+			console.log('Comment Service Error: createComment', err);
+			throw new InternalServerErrorException(Message.CREATE_FAILED);
 		}
 
+		const notifInput: NotificationInput = {
+			notificationGroup: null,
+			notificationType: NotificationType.COMMENT,
+			notificationTitle: '',
+			notificationDesc: '',
+			authorId: memberId,
+			receiverId: null,
+		};
+
+		let target: any;
 		switch (input.commentGroup) {
 			case CommentGroup.PROPERTY:
-				await this.propertyService.propertyStatsEditor({
+				target = await this.propertyService.propertyStatsEditor({
 					_id: input.commentRefId,
 					targetKey: 'propertyComments',
 					modifier: 1,
 				});
+				notifInput.notificationGroup = NotificationGroup.PROPERTY;
+				notifInput.notificationTitle = 'Property Comment!';
+				notifInput.notificationDesc = 'Someone commented on your property!';
+				notifInput.receiverId = target.memberId;
+				notifInput.propertyId = input.commentRefId;
+
 				break;
 			case CommentGroup.ARTICLE:
-				await this.boardArticleService.boardArticleStatsEditor({
+				target = await this.boardArticleService.boardArticleStatsEditor({
 					_id: input.commentRefId,
 					targetKey: 'articleComments',
 					modifier: 1,
 				});
+				notifInput.notificationGroup = NotificationGroup.ARTICLE;
+				notifInput.notificationTitle = 'Article Comment!';
+				notifInput.notificationDesc = 'Someone commented on your article!';
+				notifInput.receiverId = target.memberId;
+				notifInput.articleId = input.commentRefId;
 				break;
 			case CommentGroup.MEMBER:
-				await this.memberService.memberStatsEditor({
+				await this.memberService.StatisticModifier({
 					_id: input.commentRefId,
 					targetKey: 'memberComments',
 					modifier: 1,
 				});
-			default:
+				notifInput.notificationGroup = NotificationGroup.MEMBER;
+				notifInput.notificationTitle = 'Profile Comment!';
+				notifInput.notificationDesc = 'Someone commented on your profile!';
+				notifInput.receiverId = input.commentRefId;
 				break;
 		}
+		await this.notificationService.createNotification(notifInput);
+
 		if (!result) throw new InternalServerErrorException(Message.CREATE_FAILED);
 		return result;
 	}
