@@ -33,12 +33,12 @@ export class FollowService {
 		const targetMember = await this.memberService.getMember(null, followingId);
 		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 		const result = await this.registerSubscription(followerId, followingId);
-		await this.memberService.StatisticModifier({
+		await this.memberService.memberStatsEditor({
 			_id: followerId,
 			targetKey: 'memberFollowings',
 			modifier: 1,
 		});
-		await this.memberService.StatisticModifier({
+		await this.memberService.memberStatsEditor({
 			_id: followingId,
 			targetKey: 'memberFollowers',
 			modifier: 1,
@@ -60,12 +60,12 @@ export class FollowService {
 		if (!targetMember) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
 		const result = await this.followModel.findOneAndDelete({ followerId, followingId }).exec();
 		if (!result) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-		await this.memberService.StatisticModifier({
+		await this.memberService.memberStatsEditor({
 			_id: followerId,
 			targetKey: 'memberFollowings',
 			modifier: -1,
 		});
-		await this.memberService.StatisticModifier({
+		await this.memberService.memberStatsEditor({
 			_id: followingId,
 			targetKey: 'memberFollowers',
 			modifier: -1,

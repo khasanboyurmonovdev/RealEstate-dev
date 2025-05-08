@@ -74,7 +74,7 @@ export class CommentService {
 				notifInput.articleId = input.commentRefId;
 				break;
 			case CommentGroup.MEMBER:
-				await this.memberService.StatisticModifier({
+				await this.memberService.memberStatsEditor({
 					_id: input.commentRefId,
 					targetKey: 'memberComments',
 					modifier: 1,
