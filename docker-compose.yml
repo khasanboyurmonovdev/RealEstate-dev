@@ -1,4 +1,3 @@
-version: '3.3'
 services:
   nestar-api:
     container_name: nestar-api
