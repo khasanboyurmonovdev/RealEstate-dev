@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
+import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { PropertyService } from './property.service';
 import { Properties, Property } from '../../libs/dto/property/property';
 import {
@@ -28,23 +28,21 @@ export class PropertyResolver {
 	@Mutation(() => Property)
 	public async createProperty(
 		@Args('input') input: PropertyInput,
-		@AuthMember('_id') memberId: ObjectId,
+		@AuthMember('_id') ownerId: ObjectId,
 	): Promise<Property> {
 		console.log('Mutation: createPropety');
-		input.memberId = memberId;
-
-		return await this.propertyService.createProperty(input);
+		return await this.propertyService.createProperty(ownerId, input);
 	}
 
 	@UseGuards(WithoutGuard)
 	@Query((returns) => Property)
 	public async getProperty(
-		@Args('propertyId') input: string,
+		@Args('propertyId', { type: () => ID }) propertyId: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Property> {
 		console.log('Query: getProperty');
-		const propertyId = shapeIntoMongoObjectId(input);
-		return await this.propertyService.getProperty(memberId, propertyId);
+		const id = shapeIntoMongoObjectId(propertyId);
+		return await this.propertyService.getProperty(memberId, id);
 	}
 
 	@Roles(MemberType.AGENT)
@@ -103,11 +101,11 @@ export class PropertyResolver {
 	@UseGuards(AuthGuard)
 	@Mutation(() => Property)
 	public async likeTargetProperty(
-		@Args('propertyId') input: string,
+		@Args('propertyId', { type: () => ID }) propertyId: string,
 		@AuthMember('_id') memberId: ObjectId,
 	): Promise<Property> {
 		console.log('Mutation: likeTargetProperty');
-		const likeRefId = shapeIntoMongoObjectId(input);
+		const likeRefId = shapeIntoMongoObjectId(propertyId);
 		return await this.propertyService.likeTargetProperty(memberId, likeRefId);
 	}
 	/** ADMIN **/
@@ -138,9 +136,11 @@ export class PropertyResolver {
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
 	@Mutation((returns) => Property)
-	public async removePropertyByAdmin(@Args('propertyId') input: string): Promise<Property> {
+	public async removePropertyByAdmin(
+		@Args('propertyId', { type: () => ID }) propertyId: string,
+	): Promise<Property> {
 		console.log('Mutation: removePropertyByAdmin');
-		const propertyId = shapeIntoMongoObjectId(input);
-		return await this.propertyService.removePropertyByAdmin(propertyId);
+		const id = shapeIntoMongoObjectId(propertyId);
+		return await this.propertyService.removePropertyByAdmin(id);
 	}
 }

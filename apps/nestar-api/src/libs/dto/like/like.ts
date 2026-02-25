@@ -1,13 +1,13 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { LikeGroup } from '../../enums/like.enum';
 import { ObjectId } from 'mongoose';
 
-@ObjectType()
+@ObjectType('MeLiked')
 export class MeLiked {
-	@Field(() => String)
+	@Field(() => ID)
 	memberId: ObjectId;
 
-	@Field(() => String)
+	@Field(() => ID)
 	likeRefId: ObjectId;
 
 	@Field(() => Boolean)
@@ -16,16 +16,16 @@ export class MeLiked {
 
 @ObjectType()
 export class Like {
-	@Field(() => String)
+	@Field(() => ID)
 	_id: ObjectId;
 
 	@Field(() => LikeGroup)
 	likeGroup: LikeGroup;
 
-	@Field(() => String)
+	@Field(() => ID)
 	likeRefId: ObjectId;
 
-	@Field(() => String)
+	@Field(() => ID)
 	memberId: ObjectId;
 
 	@Field(() => Date)

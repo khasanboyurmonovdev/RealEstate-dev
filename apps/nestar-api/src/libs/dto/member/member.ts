@@ -1,4 +1,4 @@
-import { Field, Int, ObjectType } from "@nestjs/graphql";
+import { Field, ID, Int, ObjectType } from "@nestjs/graphql";
 import { ObjectId } from "mongoose";
 import { MemberAuthType, MemberStatus, MemberType } from "../../enums/member.enum";
 import { MeLiked } from "../like/like";
@@ -8,7 +8,7 @@ import { MeFollowed } from "../follow/follow";
 
 @ObjectType()
 export class Member {
-    @Field(() => String)
+    @Field(() => ID)
     _id: ObjectId;
 
     @Field(() => MemberType)
@@ -86,7 +86,10 @@ export class Member {
     accessToken?: string;
 
     /** from aggregation **/
-    @Field(() => [MeLiked], {nullable: true})
+    @Field(() => [MeLiked], {
+        nullable: true,
+        description: 'Requires subfield selection: { memberId likeRefId myFavorite }',
+    })
     meLiked?: MeLiked[];
 
     @Field(() => [MeFollowed], {nullable: true})

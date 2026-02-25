@@ -1,116 +1,119 @@
 import { Schema } from 'mongoose';
-import { PropertyLocation, PropertyStatus, PropertyType } from '../libs/enums/property.enum';
+import {
+	PropertyTypeValues,
+	DistrictValues,
+	RenovationValues,
+	ListingTypeValues,
+	CityValues,
+	BuildingTypeValues,
+	PropertyStatus,
+} from '../libs/enums/property.enum';
 
 const PropertySchema = new Schema(
 	{
+		title: {
+			type: String,
+			required: true,
+		},
+		listingType: {
+			type: String,
+			enum: ListingTypeValues,
+			required: true,
+		},
+		city: {
+			type: String,
+			enum: CityValues,
+			required: true,
+		},
+		description: {
+			type: String,
+		},
+		price: {
+			type: Number,
+			required: true,
+		},
+		currency: {
+			type: String,
+			default: 'UZS',
+		},
+		priceNegotiable: {
+			type: Boolean,
+			default: false,
+		},
+		depositRequired: {
+			type: Boolean,
+			default: false,
+		},
+		commissionIncluded: {
+			type: Boolean,
+			default: false,
+		},
+		location: {
+			lat: { type: Number },
+			lng: { type: Number },
+		},
 		propertyType: {
 			type: String,
-			enum: PropertyType,
+			enum: PropertyTypeValues,
 			required: true,
 		},
-
-		propertyStatus: {
+		district: {
 			type: String,
-			enum: PropertyStatus,
-			default: PropertyStatus.ACTIVE,
+			enum: DistrictValues,
+			required: true,
 		},
-
-		propertyLocation: {
+		buildingType: {
 			type: String,
-			enum: PropertyLocation,
+			enum: BuildingTypeValues,
+		},
+		rooms: {
+			type: Number,
+			min: 1,
+			max: 5,
 			required: true,
 		},
-
-		propertyAddress: {
+		area: {
+			type: Number,
+		},
+		floor: {
+			type: Number,
+		},
+		totalFloors: {
+			type: Number,
+		},
+		furnished: {
+			type: Boolean,
+			default: false,
+		},
+		renovation: {
 			type: String,
-			required: true,
+			enum: RenovationValues,
 		},
-
-		propertyTitle: {
-			type: String,
-			required: true,
+		metroNearby: {
+			type: Boolean,
+			default: false,
 		},
-
-		propertyPrice: {
-			type: Number,
-			required: true,
-		},
-
-		propertySquare: {
-			type: Number,
-			required: true,
-		},
-
-		propertyBeds: {
-			type: Number,
-			required: true,
-		},
-
-		propertyRooms: {
-			type: Number,
-			required: true,
-		},
-
-		propertyViews: {
-			type: Number,
-			default: 0,
-		},
-
-		propertyLikes: {
-			type: Number,
-			default: 0,
-		},
-
-		propertyComments: {
-			type: Number,
-			default: 0,
-		},
-
-		propertyRank: {
-			type: Number,
-			default: 0,
-		},
-
-		propertyImages: {
+		images: {
 			type: [String],
-			required: true,
+			default: [],
 		},
-
-		propertyDesc: {
-			type: String,
-		},
-
-		propertyBarter: {
-			type: Boolean,
-			default: false,
-		},
-
-		propertyRent: {
-			type: Boolean,
-			default: false,
-		},
-
-		memberId: {
+		owner: {
 			type: Schema.Types.ObjectId,
 			required: true,
 			ref: 'Member',
 		},
-
-		soldAt: {
-			type: Date,
-		},
-
-		deletedAt: {
-			type: Date,
-		},
-
-		constructedAt: {
-			type: Date,
-		},
+		// Legacy/counter fields used by views, likes, etc. (do not remove without updating other modules)
+		propertyViews: { type: Number, default: 0 },
+		propertyLikes: { type: Number, default: 0 },
+		propertyComments: { type: Number, default: 0 },
+		propertyRank: { type: Number, default: 0 },
+		propertyStatus: { type: String, enum: Object.values(PropertyStatus), default: PropertyStatus.ACTIVE },
+		deletedAt: { type: Date },
+		soldAt: { type: Date },
 	},
 	{ timestamps: true, collection: 'properties' },
 );
 
-PropertySchema.index({ propertyType: 1, propertyLocation: 1, propertyTitle: 1, propertyPrice: 1 }, { unique: true });
+PropertySchema.index({ propertyType: 1, district: 1, title: 1, price: 1 });
 
 export default PropertySchema;

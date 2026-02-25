@@ -1,84 +1,126 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsInt, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
-import { PropertyLocation, PropertyStatus, PropertyType } from '../../enums/property.enum';
+import { Field, Float, ID, InputType, Int } from '@nestjs/graphql';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, Length, Min, Max } from 'class-validator';
+import {
+	District,
+	ListingType,
+	City,
+	BuildingType,
+	PropertyStatus,
+	PropertyType,
+	Renovation,
+} from '../../enums/property.enum';
 import { ObjectId } from 'mongoose';
-import { availableOptions, availablePropertySorts } from '../../config';
+import { availablePropertySorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
 
 @InputType()
+export class LocationInput {
+	@IsOptional()
+	@Field(() => Float, { nullable: true })
+	lat?: number;
+
+	@IsOptional()
+	@Field(() => Float, { nullable: true })
+	lng?: number;
+}
+
+@InputType()
 export class PropertyInput {
+	@IsNotEmpty()
+	@Length(5, 200)
+	@Field(() => String)
+	title: string;
+
+	@IsNotEmpty()
+	@Field(() => ListingType)
+	listingType: ListingType;
+
+	@IsNotEmpty()
+	@Field(() => City)
+	city: City;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	description?: string;
+
+	@IsNotEmpty()
+	@Min(0)
+	@Field(() => Int)
+	price: number;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	currency?: string;
+
+	@IsOptional()
+	@Field(() => Boolean, { nullable: true })
+	priceNegotiable?: boolean;
+
+	@IsOptional()
+	@Field(() => Boolean, { nullable: true })
+	depositRequired?: boolean;
+
+	@IsOptional()
+	@Field(() => Boolean, { nullable: true })
+	commissionIncluded?: boolean;
+
+	@IsOptional()
+
+	owner: ObjectId;
+	@Field(() => LocationInput, { nullable: true })
+	location?: LocationInput;
+
 	@IsNotEmpty()
 	@Field(() => PropertyType)
 	propertyType: PropertyType;
 
 	@IsNotEmpty()
-	@Field(() => PropertyLocation)
-	propertyLocation: PropertyLocation;
+	@Field(() => District)
+	district: District;
 
-	@IsNotEmpty()
-	@Length(5, 100)
-	@Field(() => String)
-	propertyAddress: string;
-
-	@IsNotEmpty()
-	@Length(5, 100)
-	@Field(() => String)
-	propertyTitle: string;
-
-	@IsNotEmpty()
-	@Field(() => Int)
-	propertyPrice: number;
-
-	@IsNotEmpty()
-	@Field(() => Int)
-	propertySquare: number;
+	@IsOptional()
+	@Field(() => BuildingType, { nullable: true })
+	buildingType?: BuildingType;
 
 	@IsNotEmpty()
 	@IsInt()
 	@Min(1)
+	@Max(5)
 	@Field(() => Int)
-	propertyBeds: number;
-
-	@IsNotEmpty()
-	@IsInt()
-	@Min(1)
-	@Field(() => Int)
-	propertyRooms: number;
-
-	@IsNotEmpty()
-	@Field(() => [String])
-	propertyImages: string[];
+	rooms: number;
 
 	@IsOptional()
-	@Length(5, 500)
-	@Field(() => String, { nullable: true })
-	propertyDesc?: string;
+	@Min(0)
+	@Field(() => Int, { nullable: true })
+	area?: number;
 
 	@IsOptional()
-	@Field(() => Boolean, { nullable: true })
-	propertyBarter?: boolean;
+	@Field(() => Int, { nullable: true })
+	floor?: number;
+
+	@IsOptional()
+	@Field(() => Int, { nullable: true })
+	totalFloors?: number;
 
 	@IsOptional()
 	@Field(() => Boolean, { nullable: true })
-	propertyRent?: boolean;
+	furnished?: boolean;
 
-	memberId: ObjectId;
+	@IsOptional()
+	@Field(() => Renovation, { nullable: true })
+	renovation?: Renovation;
 
-	@Field(() => Date, { nullable: true })
-	constructedAt?: Date;
+	@IsOptional()
+	@Field(() => Boolean, { nullable: true })
+	metroNearby?: boolean;
+
+	@IsOptional()
+	@Field(() => [String], { nullable: true })
+	images?: string[];
 }
 
 @InputType()
-export class PricesRange {
-	@Field(() => Int)
-	start: number;
-
-	@Field(() => Int)
-	end: number;
-}
-
-@InputType()
-export class SquaresRange {
+export class AreaRange {
 	@Field(() => Int)
 	start: number;
 
@@ -98,41 +140,62 @@ export class PeriodsRange {
 @InputType()
 export class PISearch {
 	@IsOptional()
-	@Field(() => String, { nullable: true })
+	@Field(() => ID, { nullable: true })
 	memberId?: ObjectId;
 
 	@IsOptional()
-	@Field(() => [PropertyLocation], { nullable: true })
-	locationList?: PropertyLocation[];
+	@Field(() => District, { nullable: true })
+	district?: District;
 
 	@IsOptional()
-	@Field(() => [PropertyType], { nullable: true })
-	typeList?: PropertyType[];
+	@Field(() => [District], { nullable: true })
+	districtList?: District[];
+
+	@IsOptional()
+	@Min(0)
+	@Field(() => Int, { nullable: true })
+	minPrice?: number;
+
+	@IsOptional()
+	@Min(0)
+	@Field(() => Int, { nullable: true })
+	maxPrice?: number;
+
+	@IsOptional()
+	@Field(() => Int, { nullable: true })
+	rooms?: number;
 
 	@IsOptional()
 	@Field(() => [Int], { nullable: true })
 	roomsList?: number[];
 
 	@IsOptional()
-	@Field(() => [Int], { nullable: true })
-	bedsList?: number[];
+	@Field(() => PropertyType, { nullable: true })
+	propertyType?: PropertyType;
 
 	@IsOptional()
-	@IsIn(availableOptions, { each: true })
-	@Field(() => [String], { nullable: true })
-	options?: string[];
+	@Field(() => [PropertyType], { nullable: true })
+	propertyTypeList?: PropertyType[];
 
 	@IsOptional()
-	@Field(() => PricesRange, { nullable: true })
-	pricesRange?: PricesRange;
+	@Field(() => Boolean, { nullable: true })
+	furnished?: boolean;
+
+	@IsOptional()
+	@Field(() => Renovation, { nullable: true })
+	renovation?: Renovation;
+
+	@IsOptional()
+	@Field(() => Boolean, { nullable: true })
+	metroNearby?: boolean;
 
 	@IsOptional()
 	@Field(() => PeriodsRange, { nullable: true })
 	periodsRange?: PeriodsRange;
 
 	@IsOptional()
-	@Field(() => SquaresRange, { nullable: true })
-	squaresRange?: SquaresRange;
+	@Field(() => AreaRange, { nullable: true })
+	areaRange?: AreaRange;
 
 	@IsOptional()
 	@Field(() => String, { nullable: true })
@@ -205,8 +268,8 @@ export class ALPISearch {
 	propertyStatus?: PropertyStatus;
 
 	@IsOptional()
-	@Field(() => [PropertyLocation], { nullable: true })
-	propertyLocationList?: PropertyLocation[];
+	@Field(() => [District], { nullable: true })
+	districtList?: District[];
 }
 
 @InputType()

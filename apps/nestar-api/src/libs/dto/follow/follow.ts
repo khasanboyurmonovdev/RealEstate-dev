@@ -1,14 +1,14 @@
-import { Field, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { ObjectId } from 'mongoose';
 import { Member, TotalCounter } from '../member/member';
 import { MeLiked } from '../like/like';
 
 @ObjectType()
 export class MeFollowed {
-	@Field(() => String)
+	@Field(() => ID)
 	followingId: ObjectId;
 
-	@Field(() => String)
+	@Field(() => ID)
 	followerId: ObjectId;
 
 	@Field(() => Boolean)
@@ -17,13 +17,13 @@ export class MeFollowed {
 
 @ObjectType()
 export class Follower {
-	@Field(() => String)
+	@Field(() => ID)
 	_id: ObjectId;
 
-	@Field(() => String)
+	@Field(() => ID)
 	followingId: ObjectId;
 
-	@Field(() => String)
+	@Field(() => ID)
 	followerId: ObjectId;
 
 	@Field(() => Date)
@@ -34,7 +34,10 @@ export class Follower {
 
 	/** from aggregation **/
 
-	@Field(() => [MeLiked], { nullable: true })
+	@Field(() => [MeLiked], {
+		nullable: true,
+		description: 'Requires subfield selection: { memberId likeRefId myFavorite }',
+	})
 	meLiked?: MeLiked[];
 
 	@Field(() => [MeFollowed], { nullable: true })
@@ -46,13 +49,13 @@ export class Follower {
 
 @ObjectType()
 export class Following {
-	@Field(() => String)
+	@Field(() => ID)
 	_id: ObjectId;
 
-	@Field(() => String)
+	@Field(() => ID)
 	followingId: ObjectId;
 
-	@Field(() => String)
+	@Field(() => ID)
 	followerId: ObjectId;
 
 	@Field(() => Date)
@@ -63,7 +66,10 @@ export class Following {
 
 	/** from aggregation **/
 
-	@Field(() => [MeLiked], { nullable: true })
+	@Field(() => [MeLiked], {
+		nullable: true,
+		description: 'Requires subfield selection: { memberId likeRefId myFavorite }',
+	})
 	meLiked?: MeLiked[];
 
 	@Field(() => [MeFollowed], { nullable: true })

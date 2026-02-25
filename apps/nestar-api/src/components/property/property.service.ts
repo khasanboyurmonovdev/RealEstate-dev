@@ -15,7 +15,7 @@ import { StatisticModifier, T } from '../../libs/types/common';
 import { PropertyStatus } from '../../libs/enums/property.enum';
 import { ViewGroup } from '../../libs/enums/view.enum';
 import { ViewService } from '../view/view.service';
-import { lookupAuthMemberLiked, lookupMember, shapeIntoMongoObjectId } from '../../libs/config';
+import { lookupAuthMemberLiked, lookupPropertyOwner, shapeIntoMongoObjectId } from '../../libs/config';
 import { PropertyUpdate } from '../../libs/dto/property/porperty.update';
 import * as moment from 'moment';
 import { LikeService } from '../like/like.service';
@@ -35,18 +35,30 @@ export class PropertyService {
 		private notificationService: NotificationService,
 	) {}
 
-	public async createProperty(input: PropertyInput): Promise<Property> {
+	public async createProperty(ownerId: ObjectId, input: PropertyInput): Promise<Property> {
+		let doc: any;
 		try {
-			const result = await this.propertyModel.create(input);
+			doc = { ...input, owner: ownerId };
+			const result = await this.propertyModel.create(doc);
 			await this.memberService.memberStatsEditor({
-				_id: result.memberId,
+				_id: result.owner,
 				targetKey: 'memberProperties',
 				modifier: 1,
 			});
 			return result;
 		} catch (err) {
-			console.log('ERROR: createPropety:', err.message);
-			throw new BadRequestException(Message.CREATE_FAILED);
+			console.error('createProperty FULL ERROR:', err);
+			console.error('createProperty ERR.ERRORS:', (err as any)?.errors);
+			console.error('createProperty DOC:', doc);
+
+			const message =
+				(err as any)?.errors
+					? Object.values((err as any).errors)
+							.map((e: any) => e?.message)
+							.join(', ')
+					: (err as any)?.message || Message.CREATE_FAILED;
+
+			throw new BadRequestException(message);
 		}
 	}
 
@@ -72,7 +84,7 @@ export class PropertyService {
 			targetProperty.meLiked = await this.likeService.checkLikeExistence(likeInput);
 		}
 
-		targetProperty.memberData = await this.memberService.getMember(null, targetProperty.memberId);
+		targetProperty.memberData = await this.memberService.getMember(null, targetProperty.owner);
 		return targetProperty;
 	}
 
@@ -80,7 +92,7 @@ export class PropertyService {
 		let { propertyStatus, soldAt, deletedAt } = input;
 		const search: T = {
 			_id: input._id,
-			memberId: memberId,
+			owner: memberId,
 			propertyStatus: PropertyStatus.ACTIVE,
 		};
 
@@ -123,7 +135,7 @@ export class PropertyService {
 							{ $skip: (input.page - 1) * input.limit },
 							{ $limit: input.limit },
 							lookupAuthMemberLiked(memberId),
-							lookupMember,
+							lookupPropertyOwner,
 							{ $unwind: '$memberData' },
 						],
 						metaCounter: [{ $count: 'total' }],
@@ -146,33 +158,51 @@ export class PropertyService {
 	private shapeMatchQuery(match: T, input: PropertiesInquiry): void {
 		const {
 			memberId,
-			locationList,
+			district,
+			districtList,
+			minPrice,
+			maxPrice,
+			rooms,
 			roomsList,
-			bedsList,
-			typeList,
+			propertyType,
+			propertyTypeList,
+			furnished,
+			renovation,
+			metroNearby,
 			periodsRange,
-			pricesRange,
-			squaresRange,
-			options,
+			areaRange,
 			text,
 		} = input.search;
 
-		if (memberId) match.memberId = shapeIntoMongoObjectId(memberId);
-		if (locationList && locationList.length) match.propertyLocation = { $in: locationList };
-		if (roomsList && roomsList.length) match.propertyRooms = { $in: roomsList };
-		if (bedsList && bedsList.length) match.propertyBeds = { $in: bedsList };
-		if (typeList && typeList.length) match.propertyType = { $in: typeList };
+		if (memberId) match.owner = shapeIntoMongoObjectId(memberId);
 
-		if (pricesRange) match.propertyPrice = { $gte: pricesRange.start, $lte: pricesRange.end };
-		if (periodsRange) match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
-		if (squaresRange) match.propertySquare = { $gte: squaresRange.start, $lte: squaresRange.end };
+		// District: single or list
+		if (district) match.district = district;
+		else if (districtList && districtList.length) match.district = { $in: districtList };
 
-		if (text) match.propertyTitle = { $regex: new RegExp(text, 'i') };
-		if (options) {
-			match['$or'] = options.map((ele) => {
-				return { [ele]: true };
-			});
+		// Price: min and/or max
+		if (minPrice != null || maxPrice != null) {
+			match.price = {} as T;
+			if (minPrice != null) (match.price as Record<string, number>).$gte = minPrice;
+			if (maxPrice != null) (match.price as Record<string, number>).$lte = maxPrice;
 		}
+
+		// Rooms: single or list
+		if (rooms != null) match.rooms = rooms;
+		else if (roomsList && roomsList.length) match.rooms = { $in: roomsList };
+
+		// Property type: single or list
+		if (propertyType) match.propertyType = propertyType;
+		else if (propertyTypeList && propertyTypeList.length) match.propertyType = { $in: propertyTypeList };
+
+		if (furnished != null) match.furnished = furnished;
+		if (renovation != null) match.renovation = renovation;
+		if (metroNearby != null) match.metroNearby = metroNearby;
+
+		if (periodsRange) match.createdAt = { $gte: periodsRange.start, $lte: periodsRange.end };
+		if (areaRange) match.area = { $gte: areaRange.start, $lte: areaRange.end };
+
+		if (text) match.title = { $regex: new RegExp(text, 'i') };
 	}
 
 	public async getAgentProperties(memberId: ObjectId, input: AgentPropertiesInquiry): Promise<Properties> {
@@ -180,7 +210,7 @@ export class PropertyService {
 		if (propertyStatus === PropertyStatus.DELETE) throw new InternalServerErrorException(Message.NOT_ALLOWED_REQUEST);
 
 		const match: T = {
-			memberId: memberId,
+			owner: memberId,
 			propertyStatus: propertyStatus ?? { $ne: PropertyStatus.DELETE },
 		};
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
@@ -194,7 +224,7 @@ export class PropertyService {
 						list: [
 							{ $skip: (input.page - 1) * input.limit },
 							{ $limit: input.limit },
-							lookupMember,
+							lookupPropertyOwner,
 							{ $unwind: '$memberData' },
 						],
 						metaCounter: [{ $count: 'total' }],
@@ -229,7 +259,7 @@ export class PropertyService {
 				notificationTitle: 'Property Liked!',
 				notificationDesc: 'Someone liked your property!',
 				authorId: memberId,
-				receiverId: target.memberId,
+				receiverId: target.owner,
 				propertyId: likeRefId,
 			};
 			await this.notificationService.createNotification(notifInput);
@@ -239,12 +269,12 @@ export class PropertyService {
 	}
 
 	public async getAllPropertiesByAdmin(input: AllPropertiesInquiry): Promise<Properties> {
-		const { propertyStatus, propertyLocationList } = input.search;
+		const { propertyStatus, districtList } = input.search;
 		const match: T = {};
 		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		if (propertyStatus) match.propertyStatus = propertyStatus;
-		if (propertyLocationList) match.propertyLocation = { $in: propertyLocationList };
+		if (districtList) match.district = { $in: districtList };
 
 		const result = await this.propertyModel
 			.aggregate([
@@ -255,7 +285,7 @@ export class PropertyService {
 						list: [
 							{ $skip: (input.page - 1) * input.limit },
 							{ $limit: input.limit },
-							lookupMember,
+							lookupPropertyOwner,
 							{ $unwind: '$memberData' },
 						],
 						metaCounter: [{ $count: 'total' }],
@@ -287,7 +317,7 @@ export class PropertyService {
 
 		if (soldAt || deletedAt) {
 			await this.memberService.memberStatsEditor({
-				_id: result.memberId,
+				_id: result.owner,
 				targetKey: 'memberProperties',
 				modifier: -1,
 			});

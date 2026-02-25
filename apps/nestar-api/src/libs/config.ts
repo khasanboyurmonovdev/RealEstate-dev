@@ -3,14 +3,14 @@ import { ObjectId } from "bson";
 export const availableAgentSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews", "memberRank"];
 export const availableMembersSorts = ["createdAt", "updatedAt", "memberLikes", "memberViews"];
 
-export const availableOptions = ['propertyBarter', 'propertyRent'];
+export const availableOptions = ['furnished', 'metroNearby'];
 export const availablePropertySorts = [
     "createdAt",
     "updatedAt",
     "propertyLikes",
     "propertyViews",
     "propertyRank",
-    "propertyPrice",
+    "price",
 ];
 
 export const availableCommentSorts = ['createdAt', 'updatedAt', 'articleLikes', 'articleViews']
@@ -111,6 +111,16 @@ export const lookupMember = {
     },
 };
 
+/** Property owner lookup (Property schema uses owner ref to Member) */
+export const lookupPropertyOwner = {
+    $lookup: {
+        from: 'members',
+        localField: 'owner',
+        foreignField: '_id',
+        as: 'memberData',
+    },
+};
+
 export const lookupFollowingData = {
     $lookup: {
         from: 'members',
@@ -132,7 +142,7 @@ export const lookupFollowerData = {
 export const lookupFavorite = {
     $lookup: {
         from: 'members',
-        localField: 'favoriteProperty.memberId',
+        localField: 'favoriteProperty.owner',
         foreignField: '_id',
         as: 'favoriteProperty.memberData',
     },
@@ -141,7 +151,7 @@ export const lookupFavorite = {
 export const lookupVisited = {
     $lookup: {
         from: 'members',
-        localField: 'visitedProperty.memberId',
+        localField: 'visitedProperty.owner',
         foreignField: '_id',
         as: 'visitedProperty.memberData',
     },

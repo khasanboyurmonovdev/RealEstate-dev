@@ -1,4 +1,4 @@
-import { Field, Int, ObjectType } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { BoardArticleCategory, BoardArticleStatus } from '../../enums/board-article.enum';
 import { ObjectId } from 'mongoose';
 import { Member, TotalCounter } from '../member/member';
@@ -6,7 +6,7 @@ import { MeLiked } from '../like/like';
 
 @ObjectType()
 export class BoardArticle {
-	@Field(() => String)
+	@Field(() => ID)
 	_id: ObjectId;
 
 	@Field(() => BoardArticleCategory)
@@ -33,7 +33,7 @@ export class BoardArticle {
 	@Field(() => Int)
 	articleComments: number;
 
-	@Field(() => String)
+	@Field(() => ID)
 	memberId: ObjectId;
 
 	@Field(() => Date)
@@ -47,7 +47,10 @@ export class BoardArticle {
 	@Field(() => Member, { nullable: true })
 	memberData?: Member;
 
-	@Field(() => [MeLiked], {nullable: true})
+	@Field(() => [MeLiked], {
+		nullable: true,
+		description: 'Requires subfield selection: { memberId likeRefId myFavorite }',
+	})
 	meLiked?: MeLiked[];
 }
 

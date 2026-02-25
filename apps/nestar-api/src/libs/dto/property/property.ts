@@ -1,97 +1,140 @@
-import { Field, Int, ObjectType } from "@nestjs/graphql";
+import { Field, Float, ID, Int, ObjectType } from "@nestjs/graphql";
 import { ObjectId } from "mongoose";
-import { PropertyLocation, PropertyStatus, PropertyType } from "../../enums/property.enum";
+import {
+	District,
+	ListingType,
+	City,
+	BuildingType,
+	PropertyStatus,
+	PropertyType,
+	Renovation,
+} from "../../enums/property.enum";
 import { Member, TotalCounter } from "../member/member";
 import { MeLiked } from "../like/like";
 
+@ObjectType()
+export class PropertyLocation {
+	@Field(() => Float, { nullable: true })
+	lat?: number;
+
+	@Field(() => Float, { nullable: true })
+	lng?: number;
+}
 
 @ObjectType()
 export class Property {
-    @Field(() => String)
-    _id: ObjectId;
+	@Field(() => ID)
+	_id: ObjectId;
 
-    @Field(() => PropertyType)
-    propertyType: PropertyType;
+	@Field(() => String)
+	title: string;
 
-    @Field(() => PropertyStatus)
-    propertyStatus: PropertyStatus;
+	@Field(() => ListingType, { nullable: true })
+	listingType?: ListingType;
 
-    @Field(() => PropertyLocation)
-    propertyLocation: PropertyLocation;
+	@Field(() => City, { nullable: true })
+	city?: City;
 
-    @Field(() => String)
-    propertyAddress: string;
+	@Field(() => String, { nullable: true })
+	description?: string;
 
-    @Field(() => String)
-    propertyTitle: string;
+	@Field(() => Int)
+	price: number;
 
-    @Field(() => Int)
-    propertyPrice: number;
+	@Field(() => String)
+	currency: string;
 
-    @Field(() => Int)
-    propertySquare: number;
+	@Field(() => Boolean, { nullable: true })
+	priceNegotiable?: boolean;
 
-    @Field(() => Int)
-    propertyBeds: number;
+	@Field(() => Boolean, { nullable: true })
+	depositRequired?: boolean;
 
-    @Field(() => Int)
-    propertyRooms: number;
+	@Field(() => Boolean, { nullable: true })
+	commissionIncluded?: boolean;
 
-    @Field(() => Int)
-    propertyViews: number;
+	@Field(() => PropertyLocation, { nullable: true })
+	location?: PropertyLocation;
 
-    @Field(() => Int)
-    propertyLikes: number;
+	@Field(() => PropertyType)
+	propertyType: PropertyType;
 
-    @Field(() => Int)
-    propertyComments: number;
+	@Field(() => District)
+	district: District;
 
-    @Field(() => Int)
-    propertyRank: number;
+	@Field(() => BuildingType, { nullable: true })
+	buildingType?: BuildingType;
 
-    @Field(() => [String])
-    propertyImages: string[];
+	@Field(() => Int)
+	rooms: number;
 
-    @Field(() => String, {nullable: true})
-    propertyDesc?: string;
+	@Field(() => Int, { nullable: true })
+	area?: number;
 
-    @Field(() => Boolean, {nullable: true})
-    propertyBarter?: boolean;
+	@Field(() => Int, { nullable: true })
+	floor?: number;
 
-    @Field(() => Boolean, {nullable: true})
-    propertyRent?: boolean;
+	@Field(() => Int, { nullable: true })
+	totalFloors?: number;
 
-    @Field(() => String)
-    memberId: ObjectId;
+	@Field(() => Boolean, { nullable: true })
+	furnished?: boolean;
 
-    @Field(()=> Date, {nullable: true})
-    soldAt?: Date;
-    
-    @Field(()=> Date, {nullable: true})
-    deletedAt?: Date;
-    
-    @Field(()=> Date, {nullable: true})
-    constructedAt?: Date;
+	@Field(() => Renovation, { nullable: true })
+	renovation?: Renovation;
 
-    @Field(() => Date)
-    createdAt: Date;
+	@Field(() => Boolean, { nullable: true })
+	metroNearby?: boolean;
 
-    @Field(() => Date, {nullable: true})
-    updatedAt?: Date;
-    
-    /** from aggregation **/
-    @Field(() => Member, {nullable: true})
-    memberData?: Member;
+	@Field(() => [String])
+	images: string[];
 
-    @Field(() => [MeLiked], {nullable: true})
-    meLiked?: MeLiked[];
+	@Field(() => ID)
+	owner: ObjectId;
+
+	@Field(() => PropertyStatus)
+	propertyStatus: PropertyStatus;
+
+	@Field(() => Int)
+	propertyViews: number;
+
+	@Field(() => Int)
+	propertyLikes: number;
+
+	@Field(() => Int)
+	propertyComments: number;
+
+	@Field(() => Int)
+	propertyRank: number;
+
+	@Field(() => Date, { nullable: true })
+	deletedAt?: Date;
+
+	@Field(() => Date, { nullable: true })
+	soldAt?: Date;
+
+	@Field(() => Date)
+	createdAt: Date;
+
+	@Field(() => Date, { nullable: true })
+	updatedAt?: Date;
+
+	/** from aggregation **/
+	@Field(() => Member, { nullable: true })
+	memberData?: Member;
+
+	@Field(() => [MeLiked], {
+		nullable: true,
+		description: 'Requires subfield selection: { memberId likeRefId myFavorite }',
+	})
+	meLiked?: MeLiked[];
 }
 
 @ObjectType()
 export class Properties {
-    @Field(() => [Property])
-    list: Property[];
+	@Field(() => [Property])
+	list: Property[];
 
-    @Field(() => [TotalCounter], {nullable: true})
-    metaCounter: TotalCounter[];
+	@Field(() => [TotalCounter], { nullable: true })
+	metaCounter: TotalCounter[];
 }
