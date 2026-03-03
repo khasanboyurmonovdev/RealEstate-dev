@@ -1,31 +1,31 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/nestar-api/src",
+  "sourceRoot": "apps/ijaraly-api/src",
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "tsConfigPath": "apps/nestar-api/tsconfig.app.json"
+    "tsConfigPath": "apps/ijaraly-api/tsconfig.app.json"
   },
   "monorepo": true,
-  "root": "apps/nestar-api",
+  "root": "apps/ijaraly-api",
   "projects": {
-    "nestar-api": {
+    "ijaraly-api": {
       "type": "application",
-      "root": "apps/nestar-api",
+      "root": "apps/ijaraly-api",
       "entryFile": "main",
-      "sourceRoot": "apps/nestar-api/src",
+      "sourceRoot": "apps/ijaraly-api/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/nestar-api/tsconfig.app.json"
+        "tsConfigPath": "apps/ijaraly-api/tsconfig.app.json"
       }
     },
-    "nestar-batch": {
+    "ijaraly-batch": {
       "type": "application",
-      "root": "apps/nestar-batch",
+      "root": "apps/ijaraly-batch",
       "entryFile": "main",
-      "sourceRoot": "apps/nestar-batch/src",
+      "sourceRoot": "apps/ijaraly-batch/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/nestar-batch/tsconfig.app.json"
+        "tsConfigPath": "apps/ijaraly-batch/tsconfig.app.json"
       }
     }
   }
