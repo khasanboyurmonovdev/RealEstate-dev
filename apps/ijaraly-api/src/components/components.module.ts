@@ -10,6 +10,10 @@ import { BoardArticleModule } from './board-article/board-article.module';
 import { NotificationModule } from './notification/notification.module';
 import { NoticeModule } from './notice/notice.module';
 import { ReportModule } from './report/report.module';
+import { BookingModule } from './booking/booking.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { PaymentModule } from './payment/payment.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { ReportModule } from './report/report.module';
     NotificationModule,
     NoticeModule,
     ReportModule,
+    BookingModule,
+    SubscriptionModule,
+    PaymentModule,
+    AiModule,
   ],
 })
 export class ComponentsModule {}

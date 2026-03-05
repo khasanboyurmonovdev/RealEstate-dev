@@ -1,5 +1,6 @@
 import { Schema } from "mongoose";
 import { MemberAuthType, MemberStatus, MemberType } from "../libs/enums/member.enum";
+import { SubscriptionPlan, SubscriptionPlanValues } from '../libs/enums/subscription.enum';
 
 const MemberSchema = new Schema({
     memberType: {
@@ -132,6 +133,18 @@ const MemberSchema = new Schema({
 
     deletedAt: {
         type: Date,
+    },
+
+    subscriptionPlan: {
+        type: String,
+        enum: SubscriptionPlanValues,
+        default: SubscriptionPlan.FREE,
+        index: true,
+    },
+
+    subscriptionExpiresAt: {
+        type: Date,
+        default: null,
     },
 }, 
 {timestamps: true, collection: 'members'});

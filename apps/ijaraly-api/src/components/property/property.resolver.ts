@@ -129,6 +129,13 @@ export class PropertyResolver {
 		return await this.propertyService.getAllPropertiesByAdmin(input);
 	}
 
+	@Query(() => [Property])
+	public async getSimilarProperties(
+		@Args('propertyId', { type: () => String }) propertyId: string,
+	): Promise<Property[]> {
+		return this.propertyService.getSimilarProperties(propertyId);
+	}
+
 	@Roles(MemberType.ADMIN)
 	@UseGuards(RolesGuard)
 	@Mutation((returns) => Property)

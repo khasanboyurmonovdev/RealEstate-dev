@@ -1,12 +1,11 @@
 import { registerEnumType } from '@nestjs/graphql';
 
 export enum PropertyType {
-	APARTMENT = 'apartment',
-	NEW_BUILDING = 'new_building',
-	SECONDARY = 'secondary',
-	HOUSE = 'house',
-	COMMERCIAL = 'commercial',
-	ROOM = 'room',
+	APARTMENT = 'APARTMENT',
+	HOUSE = 'HOUSE',
+	ROOM = 'ROOM',
+	COMMERCIAL = 'COMMERCIAL',
+	LAND = 'LAND',
 }
 registerEnumType(PropertyType, {
 	name: 'PropertyType',
@@ -15,7 +14,8 @@ registerEnumType(PropertyType, {
 export const PropertyTypeValues = Object.values(PropertyType);
 
 export enum ListingType {
-	RENT = 'RENT',
+	LONG_RENT = 'LONG_RENT',
+	SHORT_STAY = 'SHORT_STAY',
 	SALE = 'SALE',
 }
 registerEnumType(ListingType, {

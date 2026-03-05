@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import {InjectConnection, MongooseModule} from '@nestjs/mongoose';
 import {Connection} from 'mongoose';
+import PaymentSchema from '../schemas/Payment.model';
 
 @Module({
     imports: [
+        MongooseModule.forFeature([{ name: 'Payment', schema: PaymentSchema }]),
         MongooseModule.forRootAsync({
             useFactory: () => ({
                 uri: process.env.NODE_ENV === 'production' 

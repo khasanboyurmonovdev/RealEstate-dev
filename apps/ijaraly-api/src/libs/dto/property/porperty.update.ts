@@ -1,7 +1,9 @@
-import { Field, ID, InputType, Int } from "@nestjs/graphql";
+import { Field, ID, InputType, Int, Float } from "@nestjs/graphql";
 import { IsBoolean, IsNotEmpty, IsOptional, Length, Min } from "class-validator";
 import { District, City, PropertyStatus } from "../../enums/property.enum";
 import { ObjectId } from "mongoose";
+
+import { CoordinatesInput } from "./property.input";
 
 @InputType()
 export class PropertyUpdate {
@@ -35,6 +37,14 @@ export class PropertyUpdate {
 	propertyBarter?: boolean;
 
 	@IsOptional()
+	@Field(() => String, { nullable: true })
+	listingType?: string;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	propertyType?: string;
+
+	@IsOptional()
 	@Field(() => City, { nullable: true })
 	city?: City;
 
@@ -49,6 +59,22 @@ export class PropertyUpdate {
 	@IsOptional()
 	@Field(() => [String], { nullable: true })
 	images?: string[];
+
+	@IsOptional()
+	@Field(() => CoordinatesInput, { nullable: true })
+	coordinates?: CoordinatesInput;
+
+	@IsOptional()
+	@Field(() => [String], { nullable: true })
+	blockedDates?: string[];
+
+	@IsOptional()
+	@Field(() => Int, { nullable: true })
+	minStayNights?: number;
+
+	@IsOptional()
+	@Field(() => Int, { nullable: true })
+	maxStayNights?: number;
 
 	soldAt?: Date;
 	deletedAt?: Date;

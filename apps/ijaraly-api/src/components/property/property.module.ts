@@ -10,6 +10,8 @@ import { ViewModule } from '../view/view.module';
 import { MemberModule } from '../member/member.module';
 import { LikeModule } from '../like/like.module';
 import { NotificationModule } from '../notification/notification.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
 	imports: [
@@ -22,6 +24,8 @@ import { NotificationModule } from '../notification/notification.module';
 		MemberModule,
 		LikeModule,
 		NotificationModule,
+		SubscriptionModule,
+		AiModule,
 	],
 	providers: [PropertyResolver, PropertyService, PropertyCronService],
 	exports: [PropertyService],

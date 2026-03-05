@@ -30,6 +30,8 @@ import { LikeInput } from '../../libs/dto/like/like.input';
 import { NotificationInput } from '../../libs/dto/notification/notification.input';
 import { NotificationGroup, NotificationType } from '../../libs/enums/notification.enum';
 import { NotificationService } from '../notification/notification.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class PropertyService {
@@ -43,18 +45,33 @@ export class PropertyService {
 		private likeService: LikeService,
 		private notificationService: NotificationService,
 		private eventEmitter: EventEmitter2,
+		private readonly subscriptionService: SubscriptionService,
+		private readonly aiService: AiService,
 	) {}
 
 	public async createProperty(ownerId: ObjectId, input: PropertyInput): Promise<Property> {
+		await this.subscriptionService.checkListingLimit(ownerId as unknown as string);
 		let doc: any;
 		try {
 			const isDuplicate = await this.checkDuplicateListing(ownerId, input);
 
-			doc = {
+			const propertyData: any = {
 				...input,
 				owner: ownerId,
-				...(isDuplicate && { verificationStatus: VerificationStatus.UNDER_REVIEW }),
 			};
+
+			if (input.coordinates) {
+				propertyData.location = {
+					type: 'Point',
+					coordinates: [input.coordinates.lng, input.coordinates.lat],
+				};
+			}
+
+			if (isDuplicate) {
+				propertyData.verificationStatus = VerificationStatus.UNDER_REVIEW;
+			}
+
+			doc = propertyData;
 
 			const result = await this.propertyModel.create(doc);
 
@@ -69,6 +86,20 @@ export class PropertyService {
 					`Duplicate listing detected for owner ${ownerId}: address="${input.propertyAddress}", price=${input.propertyPrice}`,
 				);
 				result.isDuplicateWarning = true;
+			}
+
+			try {
+				const fakeScore = await this.aiService.scoreFakeListing(result);
+				if (fakeScore.flagged) {
+					this.logger.warn(
+						`Listing flagged as suspicious (score: ${fakeScore.score}): ${result._id} — ${fakeScore.reasons.join(', ')}`,
+					);
+					await this.propertyModel.findByIdAndUpdate(result._id, {
+						$set: { verificationStatus: VerificationStatus.UNDER_REVIEW },
+					});
+				}
+			} catch (err) {
+				this.logger.error('Fake score check failed silently', err);
 			}
 
 			return result;
@@ -139,6 +170,13 @@ export class PropertyService {
 			propertyStatus: PropertyStatus.ACTIVE,
 		};
 
+		if (input.coordinates) {
+			(input as any).location = {
+				type: 'Point',
+				coordinates: [input.coordinates.lng, input.coordinates.lat],
+			};
+		}
+
 		if (propertyStatus === PropertyStatus.SOLD) soldAt = moment().toDate();
 		else if (propertyStatus === PropertyStatus.DELETE) deletedAt = moment().toDate();
 
@@ -167,7 +205,20 @@ export class PropertyService {
 		deviceType: DeviceType = 'desktop',
 	): Promise<Properties> {
 		const match: T = { propertyStatus: PropertyStatus.ACTIVE };
-		const sort: T = { [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
+
+		const { nearLat, nearLng, nearRadiusKm } = input.search ?? {};
+		if (nearLat != null && nearLng != null && nearRadiusKm != null) {
+			match['location'] = {
+				$geoWithin: {
+					$centerSphere: [
+						[nearLng, nearLat],
+						(nearRadiusKm * 1000) / 6378137,
+					],
+				},
+			};
+		}
+
+		const sort: T = { boostedUntil: -1, [input?.sort ?? 'createdAt']: input?.direction ?? Direction.DESC };
 
 		this.shapeMatchQuery(match, input);
 		console.log('match:', match);
@@ -215,6 +266,8 @@ export class PropertyService {
 			district,
 			districtList,
 			city,
+			listingType,
+			propertyType,
 			minPrice,
 			maxPrice,
 			text,
@@ -226,6 +279,10 @@ export class PropertyService {
 		else if (districtList && districtList.length) match.district = { $in: districtList };
 
 		if (city) match.city = city;
+
+		if (listingType) match.listingType = listingType;
+
+		if (propertyType) match.propertyType = propertyType;
 
 		if (minPrice != null || maxPrice != null) {
 			match.propertyPrice = {} as T;
@@ -501,5 +558,24 @@ export class PropertyService {
 			.exec();
 		if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
 		return result;
+	}
+
+	public async getSimilarProperties(propertyId: string): Promise<any[]> {
+		const property = await this.propertyModel.findById(propertyId).lean().exec();
+		if (!property) return [];
+
+		const priceMin = property.propertyPrice * 0.5;
+		const priceMax = property.propertyPrice * 1.5;
+
+		return this.propertyModel
+			.find({
+				_id: { $ne: property._id },
+				district: property.district,
+				propertyPrice: { $gte: priceMin, $lte: priceMax },
+				propertyStatus: 'ACTIVE',
+			})
+			.limit(4)
+			.lean()
+			.exec();
 	}
 }

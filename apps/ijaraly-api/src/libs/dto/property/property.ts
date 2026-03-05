@@ -1,9 +1,27 @@
-import { Field, ID, Int, ObjectType } from "@nestjs/graphql";
+import { Field, ID, Int, ObjectType, Float } from "@nestjs/graphql";
 import { ObjectId } from "mongoose";
 import { District, City, PropertyStatus } from "../../enums/property.enum";
 import { VerificationStatus } from "../../enums/verification.enum";
 import { Member, TotalCounter } from "../member/member";
 import { MeLiked } from "../like/like";
+
+@ObjectType()
+export class PropertyCoordinates {
+	@Field(() => String)
+	type: string;
+
+	@Field(() => [Float])
+	coordinates: number[];
+}
+
+@ObjectType()
+export class CoordinatesOutput {
+	@Field(() => Float, { nullable: true })
+	lat?: number;
+
+	@Field(() => Float, { nullable: true })
+	lng?: number;
+}
 
 @ObjectType()
 export class Property {
@@ -27,6 +45,27 @@ export class Property {
 
 	@Field(() => Boolean, { nullable: true })
 	propertyBarter?: boolean;
+
+	@Field(() => String, { nullable: true })
+	listingType?: string;
+
+	@Field(() => String, { nullable: true })
+	propertyType?: string;
+
+	@Field(() => CoordinatesOutput, { nullable: true })
+	coordinates?: CoordinatesOutput;
+
+	@Field(() => PropertyCoordinates, { nullable: true })
+	location?: PropertyCoordinates;
+
+	@Field(() => [String], { nullable: true })
+	blockedDates?: string[];
+
+	@Field(() => Int, { nullable: true })
+	minStayNights?: number;
+
+	@Field(() => Int, { nullable: true })
+	maxStayNights?: number;
 
 	@Field(() => City, { nullable: true })
 	city?: City;

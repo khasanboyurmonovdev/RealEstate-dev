@@ -1,5 +1,5 @@
-import { Field, ID, InputType, Int } from '@nestjs/graphql';
-import { IsIn, IsNotEmpty, IsOptional, Length, Min } from 'class-validator';
+import { Field, ID, InputType, Int, Float } from '@nestjs/graphql';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, Length, Min } from 'class-validator';
 import {
 	District,
 	City,
@@ -8,6 +8,15 @@ import {
 import { ObjectId } from 'mongoose';
 import { availablePropertySorts } from '../../config';
 import { Direction } from '../../enums/common.enum';
+
+@InputType()
+export class CoordinatesInput {
+	@Field(() => Float)
+	lat: number;
+
+	@Field(() => Float)
+	lng: number;
+}
 
 @InputType()
 export class PropertyInput {
@@ -42,6 +51,14 @@ export class PropertyInput {
 	@Field(() => Boolean, { nullable: true })
 	propertyBarter?: boolean;
 
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	listingType?: string;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	propertyType?: string;
+
 	@IsNotEmpty()
 	@Field(() => City)
 	city: City;
@@ -57,6 +74,22 @@ export class PropertyInput {
 	@IsOptional()
 	@Field(() => [String], { nullable: true })
 	images?: string[];
+
+	@IsOptional()
+	@Field(() => CoordinatesInput, { nullable: true })
+	coordinates?: CoordinatesInput;
+
+	@IsOptional()
+	@Field(() => [String], { nullable: true })
+	blockedDates?: string[];
+
+	@IsOptional()
+	@Field(() => Int, { nullable: true })
+	minStayNights?: number;
+
+	@IsOptional()
+	@Field(() => Int, { nullable: true })
+	maxStayNights?: number;
 }
 
 @InputType()
@@ -96,6 +129,14 @@ export class PISearch {
 	city?: City;
 
 	@IsOptional()
+	@Field(() => String, { nullable: true })
+	listingType?: string;
+
+	@IsOptional()
+	@Field(() => String, { nullable: true })
+	propertyType?: string;
+
+	@IsOptional()
 	@Min(0)
 	@Field(() => Int, { nullable: true })
 	minPrice?: number;
@@ -108,6 +149,21 @@ export class PISearch {
 	@IsOptional()
 	@Field(() => String, { nullable: true })
 	text?: string;
+
+	@IsOptional()
+	@IsNumber()
+	@Field(() => Float, { nullable: true })
+	nearLat?: number;
+
+	@IsOptional()
+	@IsNumber()
+	@Field(() => Float, { nullable: true })
+	nearLng?: number;
+
+	@IsOptional()
+	@IsNumber()
+	@Field(() => Float, { nullable: true })
+	nearRadiusKm?: number;
 }
 
 @InputType()
